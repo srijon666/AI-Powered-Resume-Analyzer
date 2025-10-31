@@ -71,7 +71,7 @@ This powerful tool helps you:
     st.write("""
 1. Upload your resume (📑PDF)
 2. Paste the job description text.
-3. Click **Analyze Resume** to see the results.   
+3. Click **Analyze Resume** to see the results. 
 4. Review the compatibility score and your personalized AI learning path! 
 """)
 
@@ -103,7 +103,7 @@ def remove_stopwords(text):
 
 def calculate_similaity(resume_text, job_description):
     resume_processed=remove_stopwords(clean_text(resume_text))
-    job_processed=remove_stopwords(clean_text(job_description))    
+    job_processed=remove_stopwords(clean_text(job_description))     
     vectorizer = TfidfVectorizer()
     if not resume_processed or not job_processed:
         return 0, resume_processed, job_processed
