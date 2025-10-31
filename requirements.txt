@@ -1,9 +1,7 @@
-Dependencies required for the AI-Powered Learning Path Analyzer
-
 streamlit
 matplotlib
 numpy
 scikit-learn
 PyPDF2
 nltk
-request
+requests
