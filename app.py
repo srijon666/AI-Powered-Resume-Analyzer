@@ -13,18 +13,23 @@ from nltk import pos_tag
 import requests
 import json
 import time 
-import os # NEW: Import os for path manipulation
+import os 
 
-# --- NLTK Data Path Configuration ---
-# Fixes LookupError by pointing NLTK to a writeable, accessible path in the Streamlit environment.
-# Note: On Streamlit Cloud, the default NLTK path is sometimes not reliably accessible.
+# --- NLTK Data Path Configuration (RELIABLE FIX) ---
+# 1. Define the reliable path within the app's root directory.
+NLTK_DATA_PATH = os.path.join(os.getcwd(), '.nltk_data')
+
+# 2. Set the NLTK_DATA environment variable. This is the most reliable way 
+#    to tell NLTK where to look for data and where to save it.
 try:
-    NLTK_DATA_PATH = os.path.join(os.getcwd(), '.nltk_data')
+    if not os.path.exists(NLTK_DATA_PATH):
+        os.makedirs(NLTK_DATA_PATH, exist_ok=True)
+    os.environ['NLTK_DATA'] = NLTK_DATA_PATH
     if NLTK_DATA_PATH not in nltk.data.path:
         nltk.data.path.append(NLTK_DATA_PATH)
 except Exception as e:
     st.warning(f"Could not configure NLTK data path: {e}")
-# ------------------------------------
+# ----------------------------------------------------
 
 # Configuration and Constants
 try:
@@ -38,10 +43,10 @@ except KeyError as e:
 
 # Import NLTK Resources
 try:
-    # Ensure NLTK downloads to the configured path
-    nltk.download("punkt", quiet=True, download_dir=NLTK_DATA_PATH if 'NLTK_DATA_PATH' in locals() else None)
-    nltk.download("stopwords", quiet=True, download_dir=NLTK_DATA_PATH if 'NLTK_DATA_PATH' in locals() else None)
-    nltk.download("averaged_perceptron_tagger", quiet=True, download_dir=NLTK_DATA_PATH if 'NLTK_DATA_PATH' in locals() else None)
+    # Now NLTK knows where to save/find the data automatically via the NLTK_DATA environment variable.
+    nltk.download("punkt", quiet=True)
+    nltk.download("stopwords", quiet=True)
+    nltk.download("averaged_perceptron_tagger", quiet=True)
 except Exception as e:
     st.error(f"Error downloading NLTK resources: {e}")
 
@@ -98,7 +103,7 @@ def remove_stopwords(text):
 
 def calculate_similaity(resume_text, job_description):
     resume_processed=remove_stopwords(clean_text(resume_text))
-    job_processed = remove_stopwords(clean_text(job_description))
+    job_processed=remove_stopwords(clean_text(job_description))    
     vectorizer = TfidfVectorizer()
     if not resume_processed or not job_processed:
         return 0, resume_processed, job_processed
