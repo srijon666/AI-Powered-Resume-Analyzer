@@ -42,13 +42,21 @@ except KeyError as e:
 
 
 # Import NLTK Resources
-try:
-    # Now NLTK knows where to save/find the data automatically via the NLTK_DATA environment variable.
-    nltk.download("punkt", quiet=True)
-    nltk.download("stopwords", quiet=True)
-    nltk.download("averaged_perceptron_tagger", quiet=True)
-except Exception as e:
-    st.error(f"Error downloading NLTK resources: {e}")
+# NEW FIX: Only download resources if they are genuinely missing to prevent recurring errors.
+def download_nltk_resource_if_missing(resource_name):
+    try:
+        # Check if the resource is already available in NLTK's search paths
+        nltk.data.find(resource_name)
+    except LookupError:
+        # If not found, attempt to download it
+        try:
+            nltk.download(resource_name, quiet=True)
+        except Exception as e:
+            st.error(f"Error downloading NLTK resource '{resource_name}': {e}")
+
+download_nltk_resource_if_missing("tokenizers/punkt")
+download_nltk_resource_if_missing("corpora/stopwords")
+download_nltk_resource_if_missing("taggers/averaged_perceptron_tagger")
 
 # Page configuration
 st.set_page_config(page_title = "AI-Powered Learning Path Analyzer",page_icon="🤖",layout="wide")
