@@ -17,6 +17,7 @@ import os
 
 # Configuration and Constants
 try:
+    # Key loading expects configuration to be set securely in Streamlit Cloud Secrets UI
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
     GEMINI_API_URL = st.secrets["GEMINI_API_URL"]
 except KeyError as e:
@@ -26,9 +27,8 @@ except KeyError as e:
 
 
 # Import NLTK Resources - Reliable Cloud Fix
-# We wrap downloads in a try/except block to ensure data is present, 
-# relying on NLTK's default behavior in most deployment setups.
-
+# Checks if resources are available via a LookupError trap, and downloads them if necessary.
+# This prevents the recurring LookupError issue in restrictive cloud environments.
 try:
     # Check if a basic resource (like punkt) is present. If not, download everything.
     try:
