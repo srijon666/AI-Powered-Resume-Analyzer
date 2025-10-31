@@ -15,22 +15,6 @@ import json
 import time 
 import os 
 
-# --- NLTK Data Path Configuration (RELIABLE FIX) ---
-# 1. Define the reliable path within the app's root directory.
-NLTK_DATA_PATH = os.path.join(os.getcwd(), '.nltk_data')
-
-# 2. Set the NLTK_DATA environment variable. This is the most reliable way 
-#    to tell NLTK where to look for data and where to save it.
-try:
-    if not os.path.exists(NLTK_DATA_PATH):
-        os.makedirs(NLTK_DATA_PATH, exist_ok=True)
-    os.environ['NLTK_DATA'] = NLTK_DATA_PATH
-    if NLTK_DATA_PATH not in nltk.data.path:
-        nltk.data.path.append(NLTK_DATA_PATH)
-except Exception as e:
-    st.warning(f"Could not configure NLTK data path: {e}")
-# ----------------------------------------------------
-
 # Configuration and Constants
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -41,22 +25,21 @@ except KeyError as e:
     GEMINI_API_URL = None
 
 
-# Import NLTK Resources
-# NEW FIX: Only download resources if they are genuinely missing to prevent recurring errors.
-def download_nltk_resource_if_missing(resource_name):
-    try:
-        # Check if the resource is already available in NLTK's search paths
-        nltk.data.find(resource_name)
-    except LookupError:
-        # If not found, attempt to download it
-        try:
-            nltk.download(resource_name, quiet=True)
-        except Exception as e:
-            st.error(f"Error downloading NLTK resource '{resource_name}': {e}")
+# Import NLTK Resources - Reliable Cloud Fix
+# We wrap downloads in a try/except block to ensure data is present, 
+# relying on NLTK's default behavior in most deployment setups.
 
-download_nltk_resource_if_missing("tokenizers/punkt")
-download_nltk_resource_if_missing("corpora/stopwords")
-download_nltk_resource_if_missing("taggers/averaged_perceptron_tagger")
+try:
+    # Check if a basic resource (like punkt) is present. If not, download everything.
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt', quiet=True)
+        nltk.download('stopwords', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+except Exception as e:
+    st.error(f"Critical NLTK initialization error: {e}")
+
 
 # Page configuration
 st.set_page_config(page_title = "AI-Powered Learning Path Analyzer",page_icon="🤖",layout="wide")
