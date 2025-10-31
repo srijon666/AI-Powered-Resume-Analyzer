@@ -13,8 +13,20 @@ from nltk import pos_tag
 import requests
 import json
 import time 
+import os # NEW: Import os for path manipulation
 
-            # Configuration and Constants
+# --- NLTK Data Path Configuration ---
+# Fixes LookupError by pointing NLTK to a writeable, accessible path in the Streamlit environment.
+# Note: On Streamlit Cloud, the default NLTK path is sometimes not reliably accessible.
+try:
+    NLTK_DATA_PATH = os.path.join(os.getcwd(), '.nltk_data')
+    if NLTK_DATA_PATH not in nltk.data.path:
+        nltk.data.path.append(NLTK_DATA_PATH)
+except Exception as e:
+    st.warning(f"Could not configure NLTK data path: {e}")
+# ------------------------------------
+
+# Configuration and Constants
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
     GEMINI_API_URL = st.secrets["GEMINI_API_URL"]
@@ -24,15 +36,16 @@ except KeyError as e:
     GEMINI_API_URL = None
 
 
-            # Import NLTK Resources
+# Import NLTK Resources
 try:
-    nltk.download("punkt", quiet=True)
-    nltk.download("stopwords", quiet=True)
-    nltk.download("averaged_perceptron_tagger", quiet=True)
+    # Ensure NLTK downloads to the configured path
+    nltk.download("punkt", quiet=True, download_dir=NLTK_DATA_PATH if 'NLTK_DATA_PATH' in locals() else None)
+    nltk.download("stopwords", quiet=True, download_dir=NLTK_DATA_PATH if 'NLTK_DATA_PATH' in locals() else None)
+    nltk.download("averaged_perceptron_tagger", quiet=True, download_dir=NLTK_DATA_PATH if 'NLTK_DATA_PATH' in locals() else None)
 except Exception as e:
     st.error(f"Error downloading NLTK resources: {e}")
 
-            # Page configuration
+# Page configuration
 st.set_page_config(page_title = "AI-Powered Learning Path Analyzer",page_icon="🤖",layout="wide")
 st.title("AI-Powered Learning Path Analyzer")
 
@@ -53,11 +66,11 @@ This powerful tool helps you:
     st.write("""
 1. Upload your resume (📑PDF)
 2. Paste the job description text.
-3. Click **Analyze Resume** to see the results.   
+3. Click **Analyze Resume** to see the results.   
 4. Review the compatibility score and your personalized AI learning path! 
 """)
 
-            # Core Utility Functions
+# Core Utility Functions
 
 def extract_text_from_pdf(uploaded_file):
     try:
@@ -85,7 +98,7 @@ def remove_stopwords(text):
 
 def calculate_similaity(resume_text, job_description):
     resume_processed=remove_stopwords(clean_text(resume_text))
-    job_processed=remove_stopwords(clean_text(job_description))    
+    job_processed = remove_stopwords(clean_text(job_description))
     vectorizer = TfidfVectorizer()
     if not resume_processed or not job_processed:
         return 0, resume_processed, job_processed
@@ -104,7 +117,7 @@ def extract_keywords(text, num_keywords=10):
 
 
 
-            # Function to extract candidate details (Name, Email, Phone)
+# Function to extract candidate details (Name, Email, Phone)
 def extract_candidate_info(text):
     info = {
         "Name": "N/A",
@@ -112,7 +125,7 @@ def extract_candidate_info(text):
         "Phone": "N/A"
     }
     
-            # Name extraction: Take the first non-empty line of the resume.
+    # Name extraction: Take the first non-empty line of the resume.
 
     first_lines = [line.strip() for line in text.split('\n') if line.strip()]
     if first_lines and len(first_lines[0].split()) >= 2: # Must be at least two words for a name
@@ -121,12 +134,12 @@ def extract_candidate_info(text):
         # Fallback to single word if the first line is very short
         info["Name"] = first_lines[0].strip()
     
-            # Email extraction (kept intact)
+    # Email extraction (kept intact)
     email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
     if email_match:
         info["Email"] = email_match.group(0)
-        
-          # Phone number extraction: Enforce country code (optional) + 10 digits minimum.
+    
+    # Phone number extraction: Enforce country code (optional) + 10 digits minimum.
     phone_regex = re.compile(
         r"""(\+?\d{1,4})? # Optional Country Code, e.g., +1 or 91
         [\s\-\.]? # Separator after CC
@@ -142,7 +155,7 @@ def extract_candidate_info(text):
         
         if len(clean_check) >= 10:
             info["Phone"] = full_match_text
-        
+    
     return info
 
 def extract_section_content(text, start_header, end_headers):
@@ -211,11 +224,11 @@ def plot_density_curve(score):
     
     return fig
 
-            # Gemini API Call for Learning Path Generation (Intact)
+# Gemini API Call for Learning Path Generation (Intact)
 def generate_learning_path(resume_text, job_description):
     """Calls the Gemini API to get a structured learning path recommendation."""
     
-  
+    
     if not GEMINI_API_KEY or not GEMINI_API_URL:
         return None
 
@@ -299,7 +312,7 @@ def generate_learning_path(resume_text, job_description):
             return None
     return None
 
-            # Main Application Logic 
+# Main Application Logic 
 def main():
     uploaded_file = st.file_uploader("Upload your Resume (📑PDF)", type=["pdf"])
     job_description = st.text_area("Paste the Job Description here", height=200)
@@ -323,10 +336,10 @@ def main():
                 st.error("Failed to extract text from the uploaded PDF. Please try again with a clear, text-based PDF.")
                 return
             
-           
+            
             similarity_score, _, _ = calculate_similaity(resume_text, job_description)
             
-           
+            
             candidate_info = extract_candidate_info(resume_text)
             
             
@@ -338,13 +351,13 @@ def main():
             if not project_text:
                 project_text = extract_section_content(resume_text, 'WORK HISTORY', [h for h in ALL_HEADERS if h != 'WORK HISTORY'])
 
-           
+            
             ranked_skills = rank_skills_by_projects(skill_text, project_text)
 
-                # Results Display
+            # Results Display
             st.subheader("Analysis Results")
             
-                 # Display Candidate Details
+            # Display Candidate Details
             st.markdown("### 👤 Candidate Details")
             col_name, col_email, col_phone = st.columns(3)
             col_name.metric("Name", candidate_info["Name"])
